@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import IPython
 
+
 class MyAgent(ap.Agent):
     def setup(self):
         # 1. Initialize agent's attribute: health with random value between 60-100
@@ -47,12 +48,12 @@ class MyAgent(ap.Agent):
     def update(self):
         # 3. Update health values - decrease by 5 each step
         self.health -= 5
-
+        self.health_record.append(self.health)
         # Updating position values using the move method
         self.move()
 
         # 4. Record health data
-        self.health_record.append(self.health)
+        
 
 class MyModel(ap.Model):
     def setup(self):
@@ -109,21 +110,17 @@ class MyModel(ap.Model):
       # Collect and store health records in a model field
       self.all_health_records = {f'Agent {agent.id}': agent.health_record for agent in self.agents}
 
+
 def run_and_visualize():
-    model = MyModel()
-    results = model.run()
+    parameters = {'size': 20}
+    model = MyModel(parameters)
+    model.run()
 
-    # Access the health records from the model's attribute instead of results
-    health_records = model.all_health_records  # Use model.all_health_records directly
-
-    # Create visualization (requires matplotlib)
-    import matplotlib.pyplot as plt
-
+    # Plot health records after the simulation
     plt.figure(figsize=(10, 6))
-    for agent_id, health_data in health_records.items():
-      if health_data:
+    for agent_id, health_data in model.all_health_records.items():
         plt.plot(health_data, label=f'Agent {agent_id}')
-
+    
     plt.title('Agent Health Over Time')
     plt.xlabel('Time Steps')
     plt.ylabel('Health')
@@ -131,25 +128,6 @@ def run_and_visualize():
     plt.grid(True)
     plt.show()
 
-    # Visualize agent trajectories
-    plt.figure(figsize=(10, 6))
-    for agent in model.agents:
-        if agent.position_history:
-            pos_x = [pos[0] for pos in agent.position_history]
-            pos_y = [pos[1] for pos in agent.position_history]
-            plt.plot(pos_x, pos_y, label=f'Agent {agent.id}')  # Plot trajectory of each agent
-
-    plt.title('Agent Trajectories')
-    plt.xlabel('X Position')
-    plt.ylabel('Y Position')
-    plt.xlim(0, model.p.size - 1)
-    plt.ylim(0, model.p.size - 1)
-    plt.legend(loc='best')
-    plt.grid(True)
-    plt.show()
-
 if __name__ == "__main__":
     run_and_visualize()
-
-
 
