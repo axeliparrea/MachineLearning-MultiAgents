@@ -2,53 +2,59 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Parámetros del ambiente
+# Parameters
 filas = 5
 columnas = 5
 energia_inicial = 10
 
-# Generamos la habitación con valores aleatorios de recompensa y castigo (-10 a 10)
-habitacion = np.random.randint(-10, 10, (filas, columnas))
+# Generate a matrix where 1 is prize, -1 is punishment, and 0 is neutral
+habitacion = np.random.choice([1, -1, 0], size=(filas, columnas), p=[0.3, 0.3, 0.4])
 
-# Clase que representa al Robot
+# Display the initial matrix
+print("Initial Room Layout (1=Prize, -1=Punishment, 0=Neutral):\n", habitacion)
+
+# Robot class
 class Robot:
     def __init__(self, energia, posicion_inicial):
         self.energia = energia
         self.posicion = posicion_inicial
         self.recompensa_acumulada = 0
-        self.tiempo_total = 0  # Medirá el tiempo (o movimientos) usados
+        self.tiempo_total = 0
 
     def mover(self, nueva_posicion):
-        # Calcula el costo de moverse
-        if self.energia <= 0:
-            print("El robot se ha quedado sin energía")
+        if nueva_posicion is None:
+            print("No valid cell to move to.")
             return False
 
         fila, col = nueva_posicion
-        print("nueva_posicion")
         recompensa = habitacion[fila, col]
-        
-        # Actualizamos los valores
-        self.energia += recompensa - 1  # Coste de movimiento: -1
+
+        if self.energia <= 0:
+            print("The robot has run out of energy.")
+            return False
+
+        # Update values
+        self.energia += recompensa - 1
         self.recompensa_acumulada += recompensa
-        habitacion[fila, col] = 0  # Recolectamos la recompensa y la eliminamos
+        habitacion[fila, col] = 0  # Collect the reward/punishment and reset cell
         self.posicion = (fila, col)
         self.tiempo_total += 1
+
+        if self.recompensa_acumulada < 0:
+            print("Accumulated reward is negative. Stopping simulation.")
+            return False
+
         return True
 
     def encontrar_vecinos(self):
         fila, col = self.posicion
         vecinos = []
-        # Arriba
         if fila > 0:
             vecinos.append((fila - 1, col))
-        # Abajo
         if fila < filas - 1:
             vecinos.append((fila + 1, col))
-        # Izquierda
         if col > 0:
             vecinos.append((fila, col - 1))
-        # Derecha
         if col < columnas - 1:
             vecinos.append((fila, col + 1))
         return vecinos
@@ -65,7 +71,7 @@ class Robot:
                 if habitacion[fila, col] > mejor_recompensa:
                     mejor_recompensa = habitacion[fila, col]
                     mejor_celda = (fila, col)
-        return self.mover(mejor_celda)
+        return self.mover(mejor_celda) if mejor_celda is not None else False
 
     def moverse_hacia_recompensa_mas_cercana(self):
         mejor_celda = None
@@ -79,9 +85,9 @@ class Robot:
                     if distancia < menor_distancia:
                         menor_distancia = distancia
                         mejor_celda = (f, c)
-        return self.mover(mejor_celda)
+        return self.mover(mejor_celda) if mejor_celda is not None else False
 
-# Ejecutar simulaciones
+# Simulation function
 def ejecutar_simulacion(estrategia, energia_inicial, posicion_inicial):
     robot = Robot(energia=energia_inicial, posicion_inicial=posicion_inicial)
     while robot.energia > 0:
@@ -96,10 +102,8 @@ def ejecutar_simulacion(estrategia, energia_inicial, posicion_inicial):
                 break
     return robot
 
-# Configuramos la posición inicial y energía
+# Initial settings
 posicion_inicial = (0, 0)
-
-# Simulamos las estrategias
 estrategias = ["aleatoria", "max_recompensa", "recompensa_cercana"]
 resultados = {}
 
@@ -111,14 +115,14 @@ for estrategia in estrategias:
         "tiempo_total": robot.tiempo_total
     }
 
-# Análisis de resultados
+# Analyze and display results
 for estrategia, resultado in resultados.items():
     print(f"Estrategia: {estrategia}")
     print(f"  Recompensa total acumulada: {resultado['recompensa_total']}")
     print(f"  Energía restante: {resultado['energia_restante']}")
     print(f"  Tiempo total (movimientos): {resultado['tiempo_total']}\n")
 
-# Graficar los resultados
+# Plotting the results
 estrategia_names = list(resultados.keys())
 recompensas = [resultados[e]["recompensa_total"] for e in estrategia_names]
 energia_restante = [resultados[e]["energia_restante"] for e in estrategia_names]
@@ -126,11 +130,11 @@ tiempo_total = [resultados[e]["tiempo_total"] for e in estrategia_names]
 
 fig, axs = plt.subplots(3, 1, figsize=(10, 8))
 axs[0].bar(estrategia_names, recompensas, color='blue')
-axs[0].set_title("Recompensa total acumulada por estrategia")
+axs[0].set_title("Total Accumulated Reward by Strategy")
 axs[1].bar(estrategia_names, energia_restante, color='green')
-axs[1].set_title("Energía restante por estrategia")
+axs[1].set_title("Remaining Energy by Strategy")
 axs[2].bar(estrategia_names, tiempo_total, color='red')
-axs[2].set_title("Tiempo total (movimientos) por estrategia")
+axs[2].set_title("Total Time (Movements) by Strategy")
 
 plt.tight_layout()
 plt.show()
