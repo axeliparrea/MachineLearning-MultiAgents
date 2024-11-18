@@ -2,62 +2,51 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Parámetros del ambiente
 filas = 5
 columnas = 5
 energia_inicial = 10
 
-# Generamos la habitación con valores aleatorios de recompensa y castigo (-10 a 10)
-habitacion = np.random.randint(-10, 10, (filas, columnas))
-
-# Clase que representa al Robot
 class Robot:
     def __init__(self, energia, posicion_inicial):
         self.energia = energia
         self.posicion = posicion_inicial
         self.recompensa_acumulada = 0
-        self.tiempo_total = 0  # Medirá el tiempo (o movimientos) usados
+        self.tiempo_total = 0
 
-    def mover(self, nueva_posicion):
-        # Calcula el costo de moverse
-        if self.energia <= 0:
-            print("El robot se ha quedado sin energía")
+    def mover(self, nueva_posicion, habitacion):
+        if nueva_posicion is None:
             return False
-
+        if self.energia <= 0:
+            return False
         fila, col = nueva_posicion
-        print("nueva_posicion")
         recompensa = habitacion[fila, col]
-        
-        # Actualizamos los valores
         self.energia += recompensa - 1  # Coste de movimiento: -1
         self.recompensa_acumulada += recompensa
-        habitacion[fila, col] = 0  # Recolectamos la recompensa y la eliminamos
+        habitacion[fila, col] = 0  # Recolecta Recom
         self.posicion = (fila, col)
         self.tiempo_total += 1
+        if self.recompensa_acumulada < 0:
+            return False
         return True
 
     def encontrar_vecinos(self):
         fila, col = self.posicion
         vecinos = []
-        # Arriba
         if fila > 0:
             vecinos.append((fila - 1, col))
-        # Abajo
         if fila < filas - 1:
             vecinos.append((fila + 1, col))
-        # Izquierda
         if col > 0:
             vecinos.append((fila, col - 1))
-        # Derecha
         if col < columnas - 1:
             vecinos.append((fila, col + 1))
         return vecinos
 
-    def moverse_aleatoriamente(self):
+    def moverse_aleatoriamente(self, habitacion):
         vecinos = self.encontrar_vecinos()
-        return self.mover(random.choice(vecinos))
+        return self.mover(random.choice(vecinos), habitacion)
 
-    def moverse_hacia_max_recompensa(self):
+    def moverse_hacia_max_recompensa(self, habitacion):
         mejor_celda = None
         mejor_recompensa = -float('inf')
         for fila in range(filas):
@@ -65,13 +54,12 @@ class Robot:
                 if habitacion[fila, col] > mejor_recompensa:
                     mejor_recompensa = habitacion[fila, col]
                     mejor_celda = (fila, col)
-        return self.mover(mejor_celda)
+        return self.mover(mejor_celda, habitacion) if mejor_celda is not None else False
 
-    def moverse_hacia_recompensa_mas_cercana(self):
+    def moverse_hacia_recompensa_mas_cercana(self, habitacion):
         mejor_celda = None
         menor_distancia = float('inf')
         fila, col = self.posicion
-
         for f in range(filas):
             for c in range(columnas):
                 if habitacion[f, c] > 0:
@@ -79,31 +67,37 @@ class Robot:
                     if distancia < menor_distancia:
                         menor_distancia = distancia
                         mejor_celda = (f, c)
-        return self.mover(mejor_celda)
+        return self.mover(mejor_celda, habitacion) if mejor_celda is not None else False
 
-# Ejecutar simulaciones
+# simulaciones
 def ejecutar_simulacion(estrategia, energia_inicial, posicion_inicial):
+    habitacion = np.random.randint(-10, 10, (filas, columnas))
+    print(f"\nHabitación generada para la estrategia '{estrategia}':")
+    print(habitacion)
+
     robot = Robot(energia=energia_inicial, posicion_inicial=posicion_inicial)
     while robot.energia > 0:
         if estrategia == "aleatoria":
-            if not robot.moverse_aleatoriamente():
+            if not robot.moverse_aleatoriamente(habitacion):
                 break
         elif estrategia == "max_recompensa":
-            if not robot.moverse_hacia_max_recompensa():
+            if not robot.moverse_hacia_max_recompensa(habitacion):
                 break
         elif estrategia == "recompensa_cercana":
-            if not robot.moverse_hacia_recompensa_mas_cercana():
+            if not robot.moverse_hacia_recompensa_mas_cercana(habitacion):
                 break
+
+    print(f"\nHabitación final después de la estrategia '{estrategia}':")
+    print(habitacion)
     return robot
 
-# Configuramos la posición inicial y energía
+# posición inicial y energía
 posicion_inicial = (0, 0)
-
-# Simulamos las estrategias
 estrategias = ["aleatoria", "max_recompensa", "recompensa_cercana"]
 resultados = {}
 
 for estrategia in estrategias:
+    print(f"\nSimulación con la estrategia '{estrategia}':")
     robot = ejecutar_simulacion(estrategia, energia_inicial, posicion_inicial)
     resultados[estrategia] = {
         "recompensa_total": robot.recompensa_acumulada,
@@ -111,14 +105,14 @@ for estrategia in estrategias:
         "tiempo_total": robot.tiempo_total
     }
 
-# Análisis de resultados
+# Resultados Terminal
 for estrategia, resultado in resultados.items():
-    print(f"Estrategia: {estrategia}")
+    print(f"\nEstrategia: {estrategia}")
     print(f"  Recompensa total acumulada: {resultado['recompensa_total']}")
     print(f"  Energía restante: {resultado['energia_restante']}")
-    print(f"  Tiempo total (movimientos): {resultado['tiempo_total']}\n")
+    print(f"  Tiempo total (movimientos): {resultado['tiempo_total']}")
 
-# Graficar los resultados
+# Resultados
 estrategia_names = list(resultados.keys())
 recompensas = [resultados[e]["recompensa_total"] for e in estrategia_names]
 energia_restante = [resultados[e]["energia_restante"] for e in estrategia_names]
